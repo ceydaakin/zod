@@ -144,6 +144,9 @@ test("z.properties", () => {
   const a = z.instanceof(URL).check(...z.properties({ protocol: z.literal("https:"), hostname: z.string() }));
   expect(z.safeParse(a, new URL("https://example.com")).success).toEqual(true);
   expect(z.safeParse(a, new URL("http://example.com")).error!.issues.map((i) => i.path)).toEqual([["protocol"]]);
+  // the clone made by `.check()` keeps the class
+  expect(a._zod.bag.Class).toBe(URL);
+  expect(z.safeParse(a, "x").error!.issues[0]).toMatchObject({ code: "invalid_type", expected: "URL" });
 });
 
 test("abort early", () => {

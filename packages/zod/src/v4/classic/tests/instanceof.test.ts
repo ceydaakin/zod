@@ -77,7 +77,7 @@ test("z.properties", () => {
   // A failing base schema yields its own issue and no property issues.
   for (const input of ["not a url", null]) {
     const issues = httpsUrl.safeParse(input).error!.issues;
-    expect(issues.map((i) => [i.code, i.path])).toEqual([["custom", []]]);
+    expect(issues.map((i) => [i.code, i.path])).toEqual([["invalid_type", []]]);
   }
 
   // Not specific to z.instanceof(). A base whose type mismatch aborts implicitly rather than explicitly must still not run the property checks against the rejected value.
@@ -124,4 +124,16 @@ test("z.properties", () => {
     ["protocol"],
     ["hostname"],
   ]);
+});
+
+test("instanceof keeps Class and invalid_type through derived schemas", () => {
+  const schemas = [
+    z.instanceof(URL).properties({ protocol: z.literal("https:") }),
+    z.instanceof(URL).check(z.property("protocol", z.literal("https:"))),
+    z.instanceof(URL).describe("url"),
+  ];
+  for (const schema of schemas) {
+    expect(schema._zod.bag.Class).toBe(URL);
+    expect(schema.safeParse("x").error!.issues[0]).toMatchObject({ code: "invalid_type", expected: "URL" });
+  }
 });

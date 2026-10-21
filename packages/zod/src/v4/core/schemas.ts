@@ -5104,6 +5104,8 @@ export interface $ZodCustomDef<O = unknown> extends $ZodTypeDef, checks.$ZodChec
   error?: errors.$ZodErrorMap | undefined;
   params?: Record<string, any> | undefined;
   fn: (arg: O) => unknown;
+  /** Set by `z.instanceof()`; a failed check reports `invalid_type` against this class. */
+  Class?: typeof util.Class | undefined;
 }
 
 export interface $ZodCustomInternals<O = unknown, I = unknown>
@@ -5125,6 +5127,9 @@ export const $ZodCustom: core.$constructor<$ZodCustom> = /*@__PURE__*/ core.$con
   checks.$ZodCheck.init(inst, def);
   $ZodType.init(inst, def);
 
+  // read from the def so clones made by `.check()` keep it
+  if (def.Class) inst._zod.bag.Class = def.Class;
+
   inst._zod.parse = (payload, _) => {
     return payload;
   };
@@ -5142,6 +5147,17 @@ export const $ZodCustom: core.$constructor<$ZodCustom> = /*@__PURE__*/ core.$con
 
 function handleRefineResult(result: unknown, payload: ParsePayload, input: unknown, inst: $ZodCustom): void {
   if (!result) {
+    const Class = inst._zod.def.Class;
+    if (Class) {
+      payload.issues.push({
+        code: "invalid_type",
+        expected: Class.name,
+        input,
+        inst,
+        path: [...(inst._zod.def.path ?? [])],
+      });
+      return;
+    }
     const _iss: any = {
       code: "custom",
       input,

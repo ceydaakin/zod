@@ -2869,21 +2869,9 @@ function _instanceof<T extends typeof util.Class>(
     check: "custom",
     fn: (data: unknown) => data instanceof cls,
     abort: true,
+    Class: cls,
     ...(util.normalizeParams(params) as any),
   });
-  inst._zod.bag.Class = cls;
-  // Override check to emit invalid_type instead of custom
-  inst._zod.check = (payload) => {
-    if (!(payload.value instanceof cls)) {
-      payload.issues.push({
-        code: "invalid_type",
-        expected: cls.name,
-        input: payload.value,
-        inst,
-        path: [...(inst._zod.def.path ?? [])],
-      });
-    }
-  };
   return inst as any;
 }
 export { _instanceof as instanceof };

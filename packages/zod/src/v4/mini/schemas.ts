@@ -1926,21 +1926,7 @@ function _instanceof<T extends typeof Class>(
   cls: T,
   params: core.$ZodCustomParams = {}
 ): ZodMiniCustom<InstanceType<T>, InstanceType<T>> {
-  const inst = custom((data) => data instanceof cls, params);
-  inst._zod.bag.Class = cls;
-  // Override check to emit invalid_type instead of custom
-  inst._zod.check = (payload) => {
-    if (!(payload.value instanceof cls)) {
-      payload.issues.push({
-        code: "invalid_type",
-        expected: cls.name,
-        input: payload.value,
-        inst,
-        path: [...(inst._zod.def.path ?? [])],
-      });
-    }
-  };
-  return inst as any;
+  return custom((data) => data instanceof cls, { ...util.normalizeParams(params), Class: cls } as any) as any;
 }
 export { _instanceof as instanceof };
 
