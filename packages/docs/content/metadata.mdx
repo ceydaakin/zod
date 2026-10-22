@@ -1,6 +1,6 @@
 ---
 title: "Metadata and registries"
-description: "Attaching and manipulatinvg metadata on Zod schemas"
+description: "Attaching and manipulating metadata on Zod schemas"
 ---
 
 import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
@@ -201,7 +201,7 @@ You've already seen a simple example of a custom registry:
 ```ts
 import * as z from "zod";
 
-const myRegistry = z.registry<{ description: string };>();
+const myRegistry = z.registry<{ description: string }>();
 ```
 
 Let's look at some more advanced patterns.
@@ -220,7 +220,7 @@ myRegistry.add(z.string(), { examples: ["hello", "world"] });
 myRegistry.add(z.number(), { examples: [1, 2, 3] });
 ```
 
-The special symbol `z.$output` is a reference to the schemas inferred output type (`z.infer<typeof schema>`). Similarly you can use `z.$input` to reference the input type.
+The special symbol `z.$output` is a reference to the schema's inferred output type (`z.infer<typeof schema>`). Similarly you can use `z.$input` to reference the input type.
 
 ### Constraining schema types
 
