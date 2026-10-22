@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { expect, expectTypeOf, test } from "vitest";
+import { expect, expectTypeOf, test, vi } from "vitest";
 
 import * as z from "zod/v4";
 
@@ -353,6 +353,24 @@ test("big base64 and base64url", () => {
   // template literals compose def.pattern and test it on every parse; the quantified block forms overflowed the regex stack here
   expect(z.templateLiteral(["id-", z.base64()]).safeParse(`id-${bigbase64}`).success).toBe(true);
   expect(z.templateLiteral(["id-", z.base64url()]).safeParse(`id-${bigbase64url}`).success).toBe(true);
+});
+
+test("base64 validation does not decode the input", () => {
+  const spy = vi.spyOn(globalThis, "atob");
+  try {
+    expect(["AB==", "ABC=", "ABCD", "A===", "AB=C", "===="].map((s) => z.base64().safeParse(s).success)).toEqual([
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+    ]);
+    expect(z.base64url().safeParse("w7_Dv8O-w74K").success).toBe(true);
+    expect(spy).not.toHaveBeenCalled();
+  } finally {
+    spy.mockRestore();
+  }
 });
 
 test("template literal composes base64 without alternation leaks", () => {
