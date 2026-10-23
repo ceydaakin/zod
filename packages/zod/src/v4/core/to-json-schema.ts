@@ -440,6 +440,23 @@ export function extractDefs<T extends schemas.$ZodType>(
   if (ctx.external) ctx.sharedDefsExtractedFor = ctx.external;
 }
 
+/** Splices a branch whose only keyword is `anyOf` into the parent `anyOf`; `oneOf` is left alone since splicing changes its verdict. */
+function flattenAnyOf(schema: JSONSchema.BaseSchema): void {
+  const options = schema.anyOf;
+  if (!Array.isArray(options)) return;
+  let flat: JSONSchema.JSONSchema[] | undefined;
+  for (let i = 0; i < options.length; i++) {
+    const option = options[i]!;
+    const nested = typeof option === "object" && option !== null;
+    if (nested) flattenAnyOf(option);
+    if (nested && Array.isArray(option.anyOf) && Object.keys(option).length === 1) {
+      flat ??= options.slice(0, i);
+      flat.push(...option.anyOf);
+    } else flat?.push(option);
+  }
+  if (flat) schema.anyOf = flat;
+}
+
 /** Rewrites `anyOf: [{type: "a"}, {type: "b"}]` to `type: ["a", "b"]`, which every JSON Schema draft treats as equivalent and most consumers render far better for the nullable case. Only branches that are a bare type assertion qualify — anything carrying a constraint, `$ref`, `const` or metadata is left alone. Runs after `flattenRef`, so a branch an override decorated or `$defs` extraction turned into a `$ref` is no longer bare and correctly stays in `anyOf`. `oneOf` is excluded: `integer` and `number` overlap, so "exactly one" and "at least one" are not the same there. OpenAPI 3.0 is excluded: its `type` must be a single string. */
 function compactTypeUnion(schema: JSONSchema.BaseSchema): void {
   const options = schema.anyOf;
@@ -659,10 +676,10 @@ export function finalize<T extends schemas.$ZodType>(
       flattenRef(entry[0]);
     }
 
-    if (ctx.target !== "openapi-3.0") {
-      for (const entry of ctx.seen.entries()) {
-        compactTypeUnion(entry[1].def ?? entry[1].schema);
-      }
+    for (const entry of ctx.seen.entries()) {
+      const json = entry[1].def ?? entry[1].schema;
+      flattenAnyOf(json);
+      if (ctx.target !== "openapi-3.0") compactTypeUnion(json);
     }
 
     for (const rewrite of ctx.deferred) rewrite();

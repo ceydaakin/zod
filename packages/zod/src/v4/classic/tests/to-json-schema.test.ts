@@ -1150,6 +1150,74 @@ describe("toJSONSchema", () => {
     `);
   });
 
+  test("nested anyOf is flattened", () => {
+    const inner = z.union([z.string().min(1), z.number().min(1)]);
+    expect(z.toJSONSchema(inner.nullable())).toMatchInlineSnapshot(`
+      {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "anyOf": [
+          {
+            "minLength": 1,
+            "type": "string",
+          },
+          {
+            "minimum": 1,
+            "type": "number",
+          },
+          {
+            "type": "null",
+          },
+        ],
+      }
+    `);
+    expect(z.toJSONSchema(z.union([z.union([inner, z.boolean()]), z.null()]))).toMatchInlineSnapshot(`
+      {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "anyOf": [
+          {
+            "minLength": 1,
+            "type": "string",
+          },
+          {
+            "minimum": 1,
+            "type": "number",
+          },
+          {
+            "type": "boolean",
+          },
+          {
+            "type": "null",
+          },
+        ],
+      }
+    `);
+
+    // a branch carrying anything besides anyOf stays nested
+    expect(z.toJSONSchema(z.union([inner.describe("inner"), z.null()]))).toMatchInlineSnapshot(`
+      {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "anyOf": [
+          {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string",
+              },
+              {
+                "minimum": 1,
+                "type": "number",
+              },
+            ],
+            "description": "inner",
+          },
+          {
+            "type": "null",
+          },
+        ],
+      }
+    `);
+  });
+
   test("discriminated unions", () => {
     const schema = z.discriminatedUnion("type", [
       z.object({ type: z.literal("success"), data: z.string() }),
