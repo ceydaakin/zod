@@ -23,7 +23,8 @@
     "**/*.d.ts",
     "**/*.d.mts",
     "**/*.d.cts",
-    "**/package.json"
+    "**/package.json",
+    "!src/**/tests"
   ],
   "keywords": [
     "typescript",
