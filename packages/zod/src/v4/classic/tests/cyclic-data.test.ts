@@ -937,6 +937,14 @@ test("a non-enumerable key does not count for z.object", () => {
   expect(z.core.isRecursiveSchema(object(false))).toBe(false);
 });
 
+// a proxy or a patched global can list a key that has no descriptor
+test("a shape key without a descriptor is skipped, not dereferenced", () => {
+  const shape = new Proxy({ name: z.string() }, { getOwnPropertyDescriptor: () => undefined });
+  const schema = z.object(shape);
+  expect(z.core.isRecursiveSchema(schema)).toBe(false);
+  expect(schema.parse({ name: "x" })).toEqual({});
+});
+
 test("the walk stays exact where nothing is deferred", () => {
   let deep: any = z.string();
   for (let i = 0; i < 300; i++) deep = z.object({ v: deep });
