@@ -260,3 +260,13 @@ test("a throwing lazy internal throws on every read", () => {
     expect(() => schema._zod.propValues).toThrow();
   }
 });
+
+test("a lazy getter that throws is retried on the next read", () => {
+  const Parent = z.object({ child: z.lazy(() => Child) });
+  // compiling reads the getter while `Child` is still in its temporal dead zone
+  const Compiled = z.compile(Parent);
+  const Child = z.object({ name: z.string() });
+
+  expect(Parent.safeParse({ child: { name: "a" } }).success).toEqual(true);
+  expect(Compiled.safeParse({ child: { name: "a" } }).success).toEqual(true);
+});

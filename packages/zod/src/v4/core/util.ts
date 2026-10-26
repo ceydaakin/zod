@@ -345,7 +345,12 @@ export function defineLazy<T, K extends keyof T>(object: T, key: K, getter: () =
       }
       if (value === undefined) {
         value = EVALUATING;
-        value = getter();
+        try {
+          value = getter();
+        } finally {
+          // a getter that threw is retried on the next read
+          if (value === EVALUATING) value = undefined;
+        }
       }
       return value;
     },
